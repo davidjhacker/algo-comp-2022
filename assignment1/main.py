@@ -17,7 +17,24 @@ class User:
 # Takes in two user objects and outputs a float denoting compatibility
 def compute_score(user1, user2):
     # YOUR CODE HERE
-    return 0
+    from scipy.stats import binom
+
+    gender_score = 0
+
+    if user1.gender in user2.preferences and user2.gender in user1.preferences:
+    	gender_score = 1
+
+    year_score = 1 - abs(user1.grad_year - user2.grad_year) / 4
+
+    response_matches = 0
+
+    for i in range(0, len(user1.responses)):
+    	if user1.responses[i] == user2.responses[i]:
+    		response_matches += 1
+
+    response_score = binom.cdf(k = response_matches, n = len(user1.responses), p = 0.2)
+
+    return response_score * gender_score * year_score
 
 
 if __name__ == '__main__':
