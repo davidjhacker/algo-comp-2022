@@ -21,7 +21,79 @@ def run_matching(scores: List[List], gender_id: List, gender_pref: List) -> List
             - What data structure can you use to take advantage of this fact when forming your matches?
         - This is by no means an exhaustive list, feel free to reach out to us for more help!
     """
-    matches = [()]
+
+    #editing scores to account for preferences
+    compatibility_matrix = []
+
+    for pref in gender_pref:
+        matrix_row = []
+        for gender in gender_id:
+            if ((pref == 'Men' and gender == 'Female') or (pref == 'Women' and gender == 'Male')):
+                matrix_row.append(0)
+            else:
+                matrix_row.append(1)
+        compatibility_matrix.append(matrix_row)
+
+    updated_scores = np.multiply(scores, compatibility_matrix)
+
+    rank_matrix = np.argsort(-1*updated_scores)
+
+    #establishing proposers
+    random_indices = np.random.choice(10, size=5, replace=False)
+    
+    #person class
+    class Person:
+        def __init__(self, index, ranks, isProposer, isFree, isMatchedWith):
+            self.index = index
+            self.ranks = ranks
+            self.isProposer = isProposer
+            self.isFree = isFree
+            self.isMatchedWith = isMatchedWith
+
+
+    free_proposer_list = []
+    proposed_list = []
+
+    #initiating proposers and proposers
+    matches = []
+    for i in range(10):
+        if i in random_indices:
+            free_proposer_list.append(Person(i, rank_matrix[i], True, True, None))
+        else:
+            proposed_list.append(Person(i, rank_matrix[i], False, True, None))
+            
+    #gale shapley
+    while free_proposer_list != []:
+        p1 = free_proposer_list[0]
+        pref_index = p1.ranks[0]
+        p1.ranks = np.delete(p1.ranks, 0)
+        p2 = None
+        for person in proposed_list:
+            if person.index == pref_index:
+                p2 = person
+
+        if p2 != None:
+            if p2.isFree == True:
+                matches.append((p1.index, p2.index))
+                p1.isFree = False
+                p2.isFree = False
+                p2.isMatchedWith = p1
+                p1.isMatchedWith = p2
+                free_proposer_list.remove(p1)
+            else:
+                current_match = p2.isMatchedWith
+                if np.where(p2.ranks == p1.index) < np.where(p2.ranks == current_match.index):
+                    matches.append((p1.index, p2.index))
+                    matches.remove((current_match.index, p2.index))
+                    p1.isFree = False
+                    p2.isFree = False
+                    p2.isMatchedWith = p1
+                    p1.isMatchedWith = p2
+                    current_match.isMatchedWith = None
+                    current_match.isFree = True
+                    free_proposer_list.remove(p1)
+                    free_proposer_list.append(current_match)
+    
     return matches
 
 if __name__ == "__main__":
